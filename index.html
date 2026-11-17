@@ -1,0 +1,1898 @@
+<!DOCTYPE html>
+<html lang="id" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CellCare Pro - Sistem Manajemen & Laporan Service HP</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        @media print {
+            body * { visibility: hidden; }
+            #printable-receipt, #printable-receipt * { visibility: visible; }
+            #printable-receipt {
+                position: fixed;
+                left: 0;
+                top: 0;
+                width: 100%;
+                padding: 20px;
+                background: white !important;
+                color: black !important;
+            }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-200 min-h-screen flex flex-col">
+
+    <!-- ==================== LOGIN SCREEN (KHUSUS LOGIN AKUN TOKO) ==================== -->
+    <div id="auth-screen" class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-100 via-blue-50/60 to-slate-200 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+        <div class="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200/80 dark:border-slate-800 overflow-hidden">
+            <!-- Header Brand -->
+            <div class="p-6 pb-5 text-center border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/50">
+                <div class="w-14 h-14 mx-auto rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-600/30 mb-3">
+                    <i data-lucide="smartphone" class="w-7 h-7"></i>
+                </div>
+                <h1 class="text-xl font-bold text-slate-900 dark:text-white">CellCare <span class="text-blue-600">Pro</span></h1>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Login Akun Toko Service Handphone</p>
+            </div>
+
+            <!-- Form Login -->
+            <form id="login-form" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Email / Username Toko</label>
+                    <input type="text" id="login-email" required placeholder="toko@cellcare.id" value="toko@cellcare.id" class="w-full px-4 py-2.5 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Password</label>
+                    <input type="password" id="login-password" required placeholder="••••••••" value="123" class="w-full px-4 py-2.5 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                </div>
+
+                <!-- Live Preview Status Database untuk Akun yang Dimasukkan -->
+                <div id="login-db-status-box" class="p-3 rounded-2xl border text-xs flex items-start gap-2.5 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/70 text-amber-800 dark:text-amber-300">
+                    <i data-lucide="alert-triangle" id="login-db-icon" class="w-4 h-4 shrink-0 mt-0.5 text-amber-500"></i>
+                    <div>
+                        <p id="login-db-title" class="font-bold">Database Belum Tersambung</p>
+                        <p id="login-db-desc" class="text-[11px] opacity-90 mt-0.5">Link database belum dimasukkan atau belum di-ACC oleh Admin.</p>
+                    </div>
+                </div>
+
+                <p id="login-error-msg" class="hidden text-xs text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/50 p-2.5 rounded-xl border border-rose-200 dark:border-rose-800"></p>
+
+                <button type="submit" class="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm shadow-lg shadow-blue-600/25 transition flex items-center justify-center gap-2 cursor-pointer">
+                    <i data-lucide="log-in" class="w-4 h-4"></i> Masuk ke Dashboard Toko
+                </button>
+
+                <p class="text-[11px] text-center text-slate-400 pt-1">
+                    Pendaftaran akun toko & aktivasi link database dilakukan melalui halaman <span class="font-semibold text-slate-600 dark:text-slate-300">Super Admin</span>.
+                </p>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==================== MAIN APP SHELL ==================== -->
+    <div id="app-shell" class="hidden flex-1 flex flex-col">
+
+    <!-- ==================== HEADER / NAVBAR ==================== -->
+    <header class="sticky top-0 z-30 bg-white/85 dark:bg-slate-900/85 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Brand Logo -->
+                <div class="flex items-center gap-3">
+                    <div class="bg-blue-600 text-white p-2 rounded-xl shadow-md shadow-blue-600/20">
+                        <i data-lucide="smartphone" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <span id="header-store-name" class="font-bold text-base sm:text-lg tracking-tight text-slate-900 dark:text-white block leading-tight">CellCare <span class="text-blue-600">Pro</span></span>
+                        <span id="header-store-tagline" class="text-[11px] text-slate-500 dark:text-slate-400 block truncate max-w-[160px] sm:max-w-[260px]">Manajemen & Laporan Service HP</span>
+                    </div>
+                </div>
+
+                <!-- Right Actions -->
+                <div class="flex items-center gap-2">
+                    <div id="sync-status-badge" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60" title="Status Koneksi Database">
+                        <span id="sync-dot" class="w-2 h-2 rounded-full bg-amber-500"></span>
+                        <span id="sync-text">Database Belum Tersambung</span>
+                    </div>
+                    <button type="button" id="btn-header-add" class="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-2 rounded-xl text-sm font-medium shadow-sm transition-all active:scale-95 cursor-pointer">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                        <span class="hidden sm:inline">Service Baru</span>
+                    </button>
+                    <button type="button" id="btn-theme-toggle" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer" title="Ganti Tema">
+                        <i data-lucide="moon" id="theme-icon" class="w-5 h-5"></i>
+                    </button>
+                    <button type="button" id="btn-header-logout" class="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/60 transition-colors cursor-pointer" title="Keluar Akun">
+                        <i data-lucide="log-out" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Banner Pemberitahuan Database Belum Tersambung -->
+    <div id="db-warning-banner" class="hidden bg-amber-500 text-slate-950 px-4 py-2.5 text-xs font-medium no-print">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+                <i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i>
+                <span><strong>Pemberitahuan:</strong> Database belum tersambung! Link database Google Sheets belum dimasukkan atau belum di-ACC oleh Admin. Data sementara hanya tersimpan di perangkat ini.</span>
+            </div>
+            <button type="button" id="btn-recheck-db" class="px-3 py-1 rounded-lg bg-slate-950 text-white font-semibold hover:bg-slate-800 transition cursor-pointer">
+                Cek Status ACC
+            </button>
+        </div>
+    </div>
+
+    <!-- Unified Bottom Navigation Bar (Tampil di HP & Desktop) -->
+    <nav aria-label="Navigasi Utama Bawah" class="fixed bottom-0 inset-x-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-t border-slate-200/80 dark:border-slate-800/80 shadow-[0_-6px_25px_rgba(0,0,0,0.08)] px-3 pt-2 pb-2.5 no-print">
+            <div class="flex items-center justify-around max-w-2xl mx-auto gap-1.5">
+                <button type="button" data-tab="dashboard" id="b-nav-dashboard" class="bottom-nav-btn flex-1 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-2 px-2 rounded-2xl text-[11px] sm:text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 shadow-sm transition-all cursor-pointer active:scale-95">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5 sm:w-4 sm:h-4"></i>
+                    <span>Dashboard</span>
+                </button>
+                <button type="button" data-tab="services" id="b-nav-services" class="bottom-nav-btn flex-1 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-2 px-2 rounded-2xl text-[11px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-all cursor-pointer active:scale-95">
+                    <i data-lucide="wrench" class="w-5 h-5 sm:w-4 sm:h-4"></i>
+                    <span>Data Service</span>
+                </button>
+                <button type="button" data-tab="reports" id="b-nav-reports" class="bottom-nav-btn flex-1 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-2 px-2 rounded-2xl text-[11px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-all cursor-pointer active:scale-95">
+                    <i data-lucide="bar-chart-3" class="w-5 h-5 sm:w-4 sm:h-4"></i>
+                    <span>Laporan</span>
+                </button>
+                <button type="button" data-tab="profile" id="b-nav-profile" class="bottom-nav-btn flex-1 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-2 px-2 rounded-2xl text-[11px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-all cursor-pointer active:scale-95">
+                    <i data-lucide="store" class="w-5 h-5 sm:w-4 sm:h-4"></i>
+                    <span>Profil Toko</span>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Main Content Container -->
+        <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-28">
+
+            <!-- ==================== TAB 1: DASHBOARD ==================== -->
+            <section id="tab-dashboard" class="tab-content space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <div class="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 mb-1">
+                            <i data-lucide="user-check" class="w-3.5 h-3.5"></i>
+                            <span>Halo, <span id="dash-admin-greeting">Admin</span></span>
+                        </div>
+                        <h2 class="text-2xl font-bold text-slate-900 dark:text-white">Ringkasan Operasional</h2>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">Pantau antrian perangkat, progres teknisi, dan performa pendapatan hari ini.</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button type="button" id="btn-reset-dummy" class="text-xs px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition cursor-pointer">
+                            Isi Data Contoh
+                        </button>
+                    </div>
+                </div>
+
+                <!-- KPI Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Unit Masuk</span>
+                            <div class="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                                <i data-lucide="smartphone" class="w-5 h-5"></i>
+                            </div>
+                        </div>
+                        <div class="mt-3 flex items-baseline gap-2">
+                            <h3 id="kpi-total-units" class="text-2xl font-bold text-slate-900 dark:text-white">0</h3>
+                            <span class="text-xs text-slate-500">perangkat</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Sedang Dikerjakan</span>
+                            <div class="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                                <i data-lucide="clock" class="w-5 h-5"></i>
+                            </div>
+                        </div>
+                        <div class="mt-3 flex items-baseline gap-2">
+                            <h3 id="kpi-in-progress" class="text-2xl font-bold text-slate-900 dark:text-white">0</h3>
+                            <span class="text-xs text-amber-600 dark:text-amber-400 font-medium">dalam antrian/proses</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Selesai / Siap Ambil</span>
+                            <div class="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                                <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+                            </div>
+                        </div>
+                        <div class="mt-3 flex items-baseline gap-2">
+                            <h3 id="kpi-ready" class="text-2xl font-bold text-slate-900 dark:text-white">0</h3>
+                            <span class="text-xs text-emerald-600 dark:text-emerald-400 font-medium">siap diserahkan</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Estimasi Laba Bersih</span>
+                            <div class="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                                <i data-lucide="wallet" class="w-5 h-5"></i>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <h3 id="kpi-net-profit" class="text-2xl font-bold text-slate-900 dark:text-white">Rp 0</h3>
+                            <p id="kpi-gross-revenue" class="text-xs text-slate-500 mt-0.5">Omzet: Rp 0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Jobs & Status Distribution -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                        <div class="p-5 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
+                            <div>
+                                <h3 class="font-semibold text-slate-900 dark:text-white">Service Terbaru Masuk</h3>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">5 transaksi terakhir yang dicatat</p>
+                            </div>
+                            <button type="button" id="btn-dash-see-all" class="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 cursor-pointer">
+                                Lihat Semua <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="border-b border-slate-200 dark:border-slate-800 text-[11px] font-semibold uppercase text-slate-400 bg-slate-50/50 dark:bg-slate-800/40">
+                                        <th class="py-3 px-4">Nota / Pelanggan</th>
+                                        <th class="py-3 px-4">Perangkat & Keluhan</th>
+                                        <th class="py-3 px-4">Status</th>
+                                        <th class="py-3 px-4 text-right">Biaya</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recent-services-tbody" class="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <h3 class="font-semibold text-slate-900 dark:text-white">Distribusi Status</h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">Proporsi kondisi unit saat ini</p>
+                        </div>
+                        <div class="relative h-56 w-full flex items-center justify-center">
+                            <canvas id="statusDoughnutChart"></canvas>
+                        </div>
+                        <div id="status-legend-summary" class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 grid grid-cols-2 gap-2 text-xs">
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================== TAB 2: DATA SERVICE ==================== -->
+            <section id="tab-services" class="tab-content hidden space-y-5">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900 dark:text-white">Daftar & Antrian Service</h2>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">Kelola data perangkat masuk, update progres teknisi, dan cetak nota pelanggan.</p>
+                    </div>
+                    <button type="button" id="btn-services-add" class="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-sm transition cursor-pointer">
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i> Tambah Unit Service
+                    </button>
+                </div>
+
+                <!-- Filter & Search Bar -->
+                <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row gap-3">
+                    <div class="relative flex-1">
+                        <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                        <input type="text" id="search-input" placeholder="Cari No. Nota, nama pelanggan, merk HP, atau keluhan..." class="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="flex flex-wrap sm:flex-nowrap gap-2">
+                        <select id="filter-status" class="px-3 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="ALL">Semua Status</option>
+                            <option value="Antrian">Antrian</option>
+                            <option value="Pengecekan">Pengecekan</option>
+                            <option value="Dikerjakan">Dikerjakan</option>
+                            <option value="Menunggu Sparepart">Menunggu Sparepart</option>
+                            <option value="Selesai">Selesai (Siap Ambil)</option>
+                            <option value="Diambil">Sudah Diambil</option>
+                            <option value="Dibatalkan">Dibatalkan</option>
+                        </select>
+                        <select id="filter-tech" class="px-3 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="ALL">Semua Teknisi</option>
+                            <option value="Andi Pratama">Andi Pratama</option>
+                            <option value="Rizky Hidayat">Rizky Hidayat</option>
+                            <option value="Budi Santoso">Budi Santoso</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Main Table -->
+                <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-slate-200 dark:border-slate-800 text-[11px] font-semibold uppercase text-slate-400 bg-slate-50 dark:bg-slate-800/50">
+                                    <th class="py-3.5 px-4">No. Nota & Tgl</th>
+                                    <th class="py-3.5 px-4">Pelanggan</th>
+                                    <th class="py-3.5 px-4">Perangkat & Keluhan</th>
+                                    <th class="py-3.5 px-4">Teknisi</th>
+                                    <th class="py-3.5 px-4">Status</th>
+                                    <th class="py-3.5 px-4 text-right">Biaya / Laba</th>
+                                    <th class="py-3.5 px-4 text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="services-tbody" class="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="empty-state" class="hidden py-12 text-center">
+                        <div class="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mx-auto mb-3">
+                            <i data-lucide="inbox" class="w-6 h-6"></i>
+                        </div>
+                        <p class="text-sm font-medium text-slate-600 dark:text-slate-300">Tidak ada data service ditemukan</p>
+                        <p class="text-xs text-slate-400 mt-1">Coba ubah filter pencarian atau tambahkan unit service baru.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================== TAB 3: LAPORAN & ANALITIK ==================== -->
+            <section id="tab-reports" class="tab-content hidden space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900 dark:text-white">Laporan Keuangan & Performa</h2>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">Analisis omzet service, biaya sparepart, profit bersih, dan produktivitas teknisi.</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <input type="month" id="report-month-filter" class="px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <button type="button" id="btn-clear-month" class="px-3 py-2 text-xs font-medium bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 rounded-xl transition cursor-pointer">
+                            Semua Waktu
+                        </button>
+                        <button type="button" id="btn-export-csv" class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-medium shadow-sm transition cursor-pointer">
+                            <i data-lucide="download" class="w-4 h-4"></i> Ekspor Excel (CSV)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Summary Report Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-gradient-to-br from-blue-600 to-indigo-700 text-white p-5 rounded-2xl shadow-md">
+                        <p class="text-xs uppercase tracking-wider text-blue-100 font-semibold">Total Pendapatan Kotor (Omzet)</p>
+                        <h3 id="rep-total-revenue" class="text-2xl font-bold mt-2">Rp 0</h3>
+                        <p id="rep-total-count" class="text-xs text-blue-100 mt-2">Dari 0 transaksi selesai/diambil</p>
+                    </div>
+                    <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                        <p class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Total Modal Sparepart</p>
+                        <h3 id="rep-total-parts" class="text-2xl font-bold text-rose-600 dark:text-rose-400 mt-2">Rp 0</h3>
+                        <p class="text-xs text-slate-500 mt-2">Pengeluaran komponen & bahan</p>
+                    </div>
+                    <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                        <p class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Laba Bersih (Jasa & Margin)</p>
+                        <h3 id="rep-net-profit" class="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-2">Rp 0</h3>
+                        <p id="rep-profit-margin" class="text-xs text-slate-500 mt-2">Margin keuntungan: 0%</p>
+                    </div>
+                </div>
+
+                <!-- Charts & Technician Breakdown -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                        <h3 class="font-semibold text-slate-900 dark:text-white mb-1">Grafik Omzet vs Modal vs Laba</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">Perbandingan finansial berdasarkan transaksi service</p>
+                        <div class="h-64 w-full">
+                            <canvas id="financialBarChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                        <h3 class="font-semibold text-slate-900 dark:text-white mb-1">Performa Teknisi</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">Jumlah unit & kontribusi omzet</p>
+                        <div id="technician-stats-list" class="space-y-3">
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================== TAB 4: PROFIL TOKO & AKUN ==================== -->
+            <section id="tab-profile" class="tab-content hidden space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900 dark:text-white">Profil Toko & Akun</h2>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">Informasi toko ini otomatis tampil pada Nota Cetak dan Pesan WhatsApp pelanggan.</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button type="button" id="btn-sync-now" class="hidden flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-sm transition cursor-pointer">
+                            <i data-lucide="refresh-cw" class="w-4 h-4"></i> Sinkronkan Google Sheets
+                        </button>
+                        <button type="button" id="btn-profile-logout" class="flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-sm transition cursor-pointer">
+                            <i data-lucide="log-out" class="w-4 h-4"></i> Keluar Akun (Logout)
+                        </button>
+                    </div>
+                </div>
+
+                <form id="profile-form" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+                        <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                            <h3 class="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                                <i data-lucide="store" class="w-4 h-4 text-blue-600"></i> Identitas Konter / Toko
+                            </h3>
+                            <span id="prof-account-email-badge" class="text-xs font-medium px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"></span>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Nama Toko / Konter *</label>
+                                <input type="text" id="prof-name" required placeholder="CellCare Pro" class="w-full px-3.5 py-2.5 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Slogan / Layanan Utama</label>
+                                <input type="text" id="prof-tagline" placeholder="Pusat Service & Sparepart HP" class="w-full px-3.5 py-2.5 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">No. WhatsApp Toko *</label>
+                                <input type="tel" id="prof-phone" required placeholder="0812-3456-7890" class="w-full px-3.5 py-2.5 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Nama Pemilik / Admin Nota</label>
+                                <input type="text" id="prof-admin" placeholder="Admin Service" class="w-full px-3.5 py-2.5 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Alamat Lengkap Toko *</label>
+                            <textarea id="prof-address" rows="2" required placeholder="Jl. Raya Merdeka No. 123, Kota" class="w-full px-3.5 py-2.5 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"></textarea>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Syarat & Ketentuan Garansi (Footer Nota)</label>
+                            <textarea id="prof-terms" rows="3" class="w-full px-3.5 py-2.5 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"></textarea>
+                        </div>
+
+                        <div class="pt-3 border-t border-slate-100 dark:border-slate-800">
+                            <label class="block text-xs font-semibold text-indigo-600 dark:text-indigo-400 mb-1 flex items-center gap-1.5">
+                                <i data-lucide="cloud" class="w-3.5 h-3.5"></i> URL Web App Google Apps Script (Opsional / Otomatis)
+                            </label>
+                            <input type="url" id="prof-gas-url" placeholder="https://script.google.com/macros/s/.../exec" class="w-full px-3.5 py-2.5 text-xs font-mono bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                            <p class="text-[11px] text-slate-400 mt-1">Jika dibuka langsung dari Web App Google Apps Script, sinkronisasi ke Google Sheets berjalan otomatis tanpa perlu mengisi URL.</p>
+                        </div>
+
+                        <div class="pt-2 flex justify-end">
+                            <button type="submit" class="w-full sm:w-auto px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl shadow-sm transition flex items-center justify-center gap-2 cursor-pointer">
+                                <i data-lucide="save" class="w-4 h-4"></i> Simpan Profil Toko
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Preview Kartu Toko & Nota -->
+                    <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between space-y-4">
+                        <div>
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 mb-3">
+                                <i data-lucide="eye" class="w-3.5 h-3.5"></i> Live Preview Kop Nota
+                            </span>
+                            <div class="p-4 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-800/40 text-center space-y-1">
+                                <h4 id="preview-card-name" class="font-bold text-base text-slate-900 dark:text-white uppercase">CellCare Pro</h4>
+                                <p id="preview-card-tagline" class="text-xs text-slate-500 dark:text-slate-400">Pusat Service & Sparepart HP</p>
+                                <p id="preview-card-address" class="text-xs text-slate-600 dark:text-slate-300 pt-1">Jl. Raya Merdeka No. 123, Kota</p>
+                                <p id="preview-card-phone" class="text-xs font-medium text-blue-600 dark:text-blue-400">WA: 0812-3456-7890</p>
+                                <div class="pt-3 mt-3 border-t border-slate-200 dark:border-slate-700 text-left">
+                                    <p class="text-[10px] font-semibold text-slate-400 uppercase mb-1">Catatan Garansi:</p>
+                                    <p id="preview-card-terms" class="text-[11px] text-slate-500 dark:text-slate-400 whitespace-pre-line leading-relaxed"></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p-3.5 rounded-xl bg-emerald-50/70 dark:bg-emerald-900/20 border border-emerald-200/70 dark:border-emerald-800/50 text-xs text-emerald-800 dark:text-emerald-300">
+                            <p class="font-semibold flex items-center gap-1.5 mb-1">
+                                <i data-lucide="shield-check" class="w-4 h-4"></i> Data Terpisah per Akun Toko
+                            </p>
+                            <p class="text-[11px] leading-relaxed opacity-90">Setiap akun toko memiliki data service, nomor nota, dan laporan keuangannya masing-masing.</p>
+                        </div>
+                    </div>
+                </form>
+            </section>
+        </main>
+    </div>
+
+    <!-- ==================== MODAL TAMBAH / EDIT SERVICE ==================== -->
+    <div id="service-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden my-8">
+            <div class="flex justify-between items-center px-6 py-4 border-b border-slate-200 dark:border-slate-800">
+                <h3 id="modal-title" class="text-lg font-bold text-slate-900 dark:text-white">Input Data Service Baru</h3>
+                <button type="button" id="btn-close-service-modal-x" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form id="service-form" class="p-6 space-y-4 max-h-[78vh] overflow-y-auto">
+                <input type="hidden" id="srv-id">
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 mb-1">No. Nota Otomatis</label>
+                        <input type="text" id="srv-nota" readonly class="w-full px-3.5 py-2 text-sm bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-mono text-slate-600 dark:text-slate-300">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 mb-1">Tanggal Masuk</label>
+                        <input type="date" id="srv-date" required class="w-full px-3.5 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <!-- Data Pelanggan -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 mb-1">Nama Pelanggan *</label>
+                        <input type="text" id="srv-customer" required placeholder="Contoh: Ahmad Fauzi" class="w-full px-3.5 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 mb-1">No. WhatsApp / HP *</label>
+                        <input type="tel" id="srv-phone" required placeholder="Contoh: 081234567890" class="w-full px-3.5 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <!-- Data Perangkat -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 mb-1">Merk & Tipe HP *</label>
+                        <input type="text" id="srv-device" required placeholder="Contoh: Samsung Galaxy A54" class="w-full px-3.5 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 mb-1">IMEI / Serial Number (Opsional)</label>
+                        <input type="text" id="srv-imei" placeholder="356789012345678" class="w-full px-3.5 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <!-- Kelengkapan Unit -->
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 mb-1.5">Kelengkapan Unit</label>
+                    <div class="flex flex-wrap gap-3 text-xs">
+                        <label class="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 cursor-pointer">
+                            <input type="checkbox" value="Unit HP" class="acc-checkbox rounded text-blue-600" checked> Unit HP
+                        </label>
+                        <label class="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 cursor-pointer">
+                            <input type="checkbox" value="SIM Card" class="acc-checkbox rounded text-blue-600"> SIM Card
+                        </label>
+                        <label class="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 cursor-pointer">
+                            <input type="checkbox" value="Memory Card" class="acc-checkbox rounded text-blue-600"> Memory Card
+                        </label>
+                        <label class="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 cursor-pointer">
+                            <input type="checkbox" value="Casing / Softcase" class="acc-checkbox rounded text-blue-600"> Casing
+                        </label>
+                        <label class="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 cursor-pointer">
+                            <input type="checkbox" value="Charger / Dus" class="acc-checkbox rounded text-blue-600"> Charger / Dus
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Keluhan & Tindakan -->
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 mb-1">Keluhan / Kerusakan & Tindakan Perbaikan *</label>
+                    <textarea id="srv-issue" rows="2" required placeholder="Contoh: Ganti LCD Original + Pasang Tempered Glass" class="w-full px-3.5 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"></textarea>
+                </div>
+
+                <!-- Teknisi & Status -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 mb-1">Teknisi Penanggung Jawab</label>
+                        <select id="srv-tech" class="w-full px-3.5 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <option value="Andi Pratama">Andi Pratama</option>
+                            <option value="Rizky Hidayat">Rizky Hidayat</option>
+                            <option value="Budi Santoso">Budi Santoso</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 mb-1">Status Pengerjaan</label>
+                        <select id="srv-status" class="w-full px-3.5 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <option value="Antrian">Antrian</option>
+                            <option value="Pengecekan">Pengecekan</option>
+                            <option value="Dikerjakan">Dikerjakan</option>
+                            <option value="Menunggu Sparepart">Menunggu Sparepart</option>
+                            <option value="Selesai">Selesai (Siap Ambil)</option>
+                            <option value="Diambil">Sudah Diambil</option>
+                            <option value="Dibatalkan">Dibatalkan</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Rincian Biaya -->
+                <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 space-y-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 mb-1">Modal Sparepart (Rp)</label>
+                            <input type="number" id="srv-parts-cost" min="0" step="1000" value="0" class="w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 mb-1">Total Biaya Pelanggan (Rp) *</label>
+                            <input type="number" id="srv-total-price" min="0" step="1000" required value="0" class="w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center pt-2 border-t border-slate-200 dark:border-slate-700 text-xs">
+                        <span class="text-slate-500 dark:text-slate-400">Estimasi Laba Bersih Transaksi Ini:</span>
+                        <span id="live-profit-preview" class="font-bold text-sm text-emerald-600 dark:text-emerald-400">Rp 0</span>
+                    </div>
+                </div>
+
+                <!-- Submit Actions -->
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" id="btn-cancel-service-modal" class="px-4 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition cursor-pointer">
+                        Batal
+                    </button>
+                    <button type="submit" class="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm transition flex items-center gap-2 cursor-pointer">
+                        <i data-lucide="save" class="w-4 h-4"></i> Simpan Data Service
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL PREVIEW & CETAK NOTA ==================== -->
+    <div id="receipt-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white dark:bg-slate-900 w-full max-w-lg rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden my-8">
+            <div class="flex justify-between items-center px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 no-print">
+                <h3 class="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <i data-lucide="printer" class="w-4 h-4 text-blue-600"></i> Preview Nota Tanda Terima
+                </h3>
+                <button type="button" id="btn-close-receipt-x" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Receipt Body (Printable) -->
+            <div id="printable-receipt" class="p-6 bg-white text-slate-900 space-y-4 text-sm">
+                <div class="text-center border-b-2 border-dashed border-slate-300 pb-3">
+                    <h2 id="rcp-store-name" class="text-xl font-extrabold tracking-tight uppercase">CELLCARE PRO</h2>
+                    <p id="rcp-store-tagline" class="text-xs text-slate-600">Pusat Service & Sparepart HP</p>
+                    <p id="rcp-store-address" class="text-xs text-slate-500 mt-0.5">Jl. Raya Merdeka No. 123, Kota</p>
+                    <p id="rcp-store-phone" class="text-xs font-medium text-slate-700">WA: 0812-3456-7890</p>
+                </div>
+
+                <div class="flex justify-between text-xs">
+                    <div>
+                        <span class="text-slate-500">No. Nota:</span>
+                        <p id="rcp-nota" class="font-mono font-bold text-sm">SRV-2025-001</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-slate-500">Tanggal Masuk:</span>
+                        <p id="rcp-date" class="font-semibold">17 Nov 2026</p>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-1.5 text-xs">
+                    <div class="flex justify-between"><span class="text-slate-500">Pelanggan:</span> <span id="rcp-customer" class="font-semibold">-</span></div>
+                    <div class="flex justify-between"><span class="text-slate-500">No. Telepon:</span> <span id="rcp-phone" class="font-semibold">-</span></div>
+                    <div class="flex justify-between"><span class="text-slate-500">Perangkat:</span> <span id="rcp-device" class="font-semibold">-</span></div>
+                    <div class="flex justify-between"><span class="text-slate-500">IMEI / SN:</span> <span id="rcp-imei" class="font-mono">-</span></div>
+                    <div class="flex justify-between"><span class="text-slate-500">Kelengkapan:</span> <span id="rcp-acc" class="font-medium">-</span></div>
+                </div>
+
+                <div>
+                    <p class="text-xs text-slate-500 mb-1">Keluhan / Tindakan Perbaikan:</p>
+                    <p id="rcp-issue" class="font-medium text-slate-800 bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-xs">-</p>
+                </div>
+
+                <div class="border-t-2 border-dashed border-slate-300 pt-3 flex justify-between items-center">
+                    <div>
+                        <span class="text-xs text-slate-500">Status Saat Ini:</span>
+                        <p id="rcp-status" class="font-bold text-blue-700 uppercase text-xs">-</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-xs text-slate-500">Total Biaya Service:</span>
+                        <p id="rcp-total" class="text-lg font-extrabold text-slate-900">Rp 0</p>
+                    </div>
+                </div>
+
+                <div class="pt-4 grid grid-cols-2 gap-4 text-center text-xs text-slate-500">
+                    <div>
+                        <p class="mb-10">Pelanggan,</p>
+                        <p id="rcp-sign-cust" class="font-semibold text-slate-700 border-t border-slate-300 pt-1 inline-block px-4">( .................... )</p>
+                    </div>
+                    <div>
+                        <p class="mb-10">Hormat Kami,</p>
+                        <p id="rcp-sign-admin" class="font-semibold text-slate-700 border-t border-slate-300 pt-1 inline-block px-4">( Admin Service )</p>
+                    </div>
+                </div>
+
+                <div class="border-t border-slate-200 pt-2">
+                    <p id="rcp-terms" class="text-[10px] text-slate-500 whitespace-pre-line leading-relaxed"></p>
+                </div>
+            </div>
+
+            <div class="px-5 py-3.5 bg-slate-50 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-2 no-print">
+                <button type="button" id="btn-close-receipt" class="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition cursor-pointer">
+                    Tutup
+                </button>
+                <button type="button" id="btn-print-receipt" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-medium shadow-sm transition cursor-pointer">
+                    <i data-lucide="printer" class="w-4 h-4"></i> Cetak Nota
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-24 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-4 py-3 rounded-xl shadow-lg text-sm font-medium flex items-center gap-2.5 no-print">
+        <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400 dark:text-emerald-600"></i>
+        <span id="toast-message">Berhasil disimpan!</span>
+    </div>
+
+    <!-- ==================== JAVASCRIPT LOGIC ==================== -->
+    <script>
+        // ==================== STATE & STORAGE KEYS ====================
+        const ACCOUNTS_KEY = 'cellcare_registered_accounts_v1';
+        const SESSION_KEY = 'cellcare_active_account_id';
+        const BASE_STORAGE_KEY = 'cellcare_pro_services_v1';
+        const BASE_PROFILE_KEY = 'cellcare_pro_profile_v1';
+
+        const defaultAccounts = [
+            {
+                id: 'ACC-DEMO-01',
+                email: 'toko@cellcare.id',
+                password: '123',
+                dbLink: '',
+                dbApproved: false,
+                profile: {
+                    name: 'CellCare Center Sukabumi',
+                    tagline: 'Spesialis Service HP & Sparepart Bergaransi',
+                    phone: '081234567890',
+                    adminName: 'Admin Utama',
+                    address: 'Jl. R.E. Martadinata No. 45, Sukabumi',
+                    terms: '1. Garansi service 14 hari.\n2. Barang tidak diambil > 30 hari di luar tanggung jawab kami.'
+                }
+            }
+        ];
+
+        let activeAccount = null;
+        let serviceList = [];
+        let storeProfile = {
+            name: 'CellCare Center',
+            tagline: 'Spesialis Service HP & Sparepart Bergaransi',
+            phone: '081234567890',
+            adminName: 'Admin Service',
+            address: 'Jl. Merdeka No. 123',
+            terms: '1. Garansi service berlaku 14 hari untuk kerusakan yang sama.\n2. Barang yang tidak diambil lebih dari 30 hari di luar tanggung jawab kami.\n3. Nota ini wajib dibawa saat pengambilan unit.',
+            gasUrl: ''
+        };
+        let statusChartInstance = null;
+        let financeChartInstance = null;
+
+        function isGasEnvironment() {
+            return typeof google !== 'undefined' && google.script && google.script.run;
+        }
+
+        function getAllAccounts() {
+            try {
+                const raw = localStorage.getItem(ACCOUNTS_KEY);
+                const list = raw ? JSON.parse(raw) : [...defaultAccounts];
+                if (!raw) localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(list));
+                return list;
+            } catch (e) {
+                return [...defaultAccounts];
+            }
+        }
+
+        function saveAllAccountsCache(list) {
+            try {
+                localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(list));
+            } catch (e) {}
+        }
+
+        function isDatabaseConnected() {
+            if (!activeAccount) return false;
+            const hasLink = Boolean((activeAccount.dbLink && activeAccount.dbLink.trim() !== '') || isGasEnvironment());
+            return Boolean(hasLink && activeAccount.dbApproved);
+        }
+
+        function getStorageKey() {
+            return `${BASE_STORAGE_KEY}_${activeAccount ? activeAccount.id : 'guest'}`;
+        }
+
+        function getProfileKey() {
+            return `${BASE_PROFILE_KEY}_${activeAccount ? activeAccount.id : 'guest'}`;
+        }
+
+        function bootstrapFromUrlParams() {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const urlDb = params.get('db');
+                const urlEmail = params.get('email');
+                const urlName = params.get('name');
+                const urlAcc = params.get('acc');
+
+                if (urlEmail) {
+                    const list = getAllAccounts();
+                    const idx = list.findIndex(a => a.email.toLowerCase() === urlEmail.toLowerCase());
+                    if (idx !== -1) {
+                        if (urlDb) list[idx].dbLink = urlDb;
+                        if (urlAcc === '1') list[idx].dbApproved = true;
+                        if (urlName) list[idx].profile = { ...list[idx].profile, name: urlName };
+                        saveAllAccountsCache(list);
+                    } else {
+                        list.unshift({
+                            id: 'ACC-' + Date.now(),
+                            email: urlEmail,
+                            password: '123',
+                            dbLink: urlDb || '',
+                            dbApproved: urlAcc === '1',
+                            profile: {
+                                name: urlName || 'Toko Service HP',
+                                tagline: 'Spesialis Service HP & Sparepart Bergaransi',
+                                phone: '',
+                                adminName: 'Admin Toko',
+                                address: '',
+                                terms: '1. Garansi service 14 hari.\n2. Barang tidak diambil > 30 hari di luar tanggung jawab kami.'
+                            }
+                        });
+                        saveAllAccountsCache(list);
+                    }
+                    const emailInput = document.getElementById('login-email');
+                    if (emailInput) emailInput.value = urlEmail;
+                }
+            } catch (e) {
+                console.warn('Gagal membaca parameter URL:', e);
+            }
+        }
+
+        function updateLoginDbStatusPreview() {
+            const identifier = (document.getElementById('login-email')?.value || '').trim().toLowerCase();
+            const box = document.getElementById('login-db-status-box');
+            const title = document.getElementById('login-db-title');
+            const desc = document.getElementById('login-db-desc');
+            if (!box || !title || !desc) return;
+
+            const found = getAllAccounts().find(a => a.email.toLowerCase() === identifier);
+            const connected = found && found.dbApproved && (Boolean(found.dbLink && found.dbLink.trim() !== '') || isGasEnvironment());
+
+            if (connected) {
+                box.className = 'p-3 rounded-2xl border text-xs flex items-start gap-2.5 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/70 text-emerald-800 dark:text-emerald-300';
+                title.textContent = 'Database Connected';
+                desc.textContent = 'Link database Google Sheets telah terpasang & di-ACC oleh Admin.';
+            } else {
+                box.className = 'p-3 rounded-2xl border text-xs flex items-start gap-2.5 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/70 text-amber-800 dark:text-amber-300';
+                title.textContent = 'Database Belum Tersambung';
+                desc.textContent = isGasEnvironment()
+                    ? 'Sistem akan mengecek status ACC database Anda secara otomatis saat klik Masuk.'
+                    : (found
+                        ? 'Admin belum memasukkan atau belum meng-ACC link database untuk akun ini.'
+                        : 'Masukkan email/username toko yang sudah didaftarkan oleh Admin.');
+            }
+        }
+
+        function updateDatabaseConnectionUI() {
+            const badge = document.getElementById('sync-status-badge');
+            const dot = document.getElementById('sync-dot');
+            const text = document.getElementById('sync-text');
+            const banner = document.getElementById('db-warning-banner');
+            const connected = isDatabaseConnected();
+
+            if (badge && dot && text) {
+                if (connected) {
+                    badge.className = 'flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60';
+                    dot.className = 'w-2 h-2 rounded-full bg-emerald-500 animate-pulse';
+                    text.textContent = 'Database Connected';
+                    banner?.classList.add('hidden');
+                } else {
+                    badge.className = 'flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60';
+                    dot.className = 'w-2 h-2 rounded-full bg-amber-500';
+                    text.textContent = 'Database Belum Tersambung';
+                    banner?.classList.remove('hidden');
+                }
+            }
+        }
+
+        function completeLoginSuccess(matchedAccount) {
+            activeAccount = matchedAccount;
+            try {
+                localStorage.setItem(SESSION_KEY, matchedAccount.id);
+            } catch (e) {}
+
+            const list = getAllAccounts();
+            const idx = list.findIndex(a => a.email.toLowerCase() === matchedAccount.email.toLowerCase());
+            if (idx !== -1) list[idx] = matchedAccount;
+            else list.unshift(matchedAccount);
+            saveAllAccountsCache(list);
+
+            enterAppWorkspace();
+
+            if (isDatabaseConnected()) {
+                showToast('Login berhasil! Status: Database Connected.');
+            } else {
+                showToast('Login berhasil, namun Database Belum Tersambung (menunggu ACC Admin).');
+            }
+        }
+
+        function handleLoginSubmit(e) {
+            e.preventDefault();
+            const identifier = document.getElementById('login-email').value.trim().toLowerCase();
+            const password = document.getElementById('login-password').value;
+            const errEl = document.getElementById('login-error-msg');
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+
+            const accounts = getAllAccounts();
+            const matchedLocal = accounts.find(a => a.email.toLowerCase() === identifier && a.password === password);
+
+            if (isGasEnvironment()) {
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = 'Memverifikasi Akun & Database...';
+                }
+                google.script.run
+                    .withSuccessHandler((res) => {
+                        if (submitBtn) {
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = '<i data-lucide="log-in" class="w-4 h-4"></i> Masuk ke Dashboard Toko';
+                            if (typeof lucide !== 'undefined') lucide.createIcons();
+                        }
+                        if (res && res.status === 'success' && res.account) {
+                            errEl.classList.add('hidden');
+                            completeLoginSuccess(res.account);
+                        } else if (matchedLocal) {
+                            errEl.classList.add('hidden');
+                            completeLoginSuccess(matchedLocal);
+                        } else {
+                            errEl.textContent = (res && res.message) || 'Email/Username atau Password tidak valid.';
+                            errEl.classList.remove('hidden');
+                        }
+                    })
+                    .withFailureHandler(() => {
+                        if (submitBtn) {
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = '<i data-lucide="log-in" class="w-4 h-4"></i> Masuk ke Dashboard Toko';
+                            if (typeof lucide !== 'undefined') lucide.createIcons();
+                        }
+                        if (matchedLocal) {
+                            errEl.classList.add('hidden');
+                            completeLoginSuccess(matchedLocal);
+                        } else {
+                            errEl.textContent = 'Gagal terhubung ke server Apps Script. Periksa kredensial Anda.';
+                            errEl.classList.remove('hidden');
+                        }
+                    })
+                    .loginAccountFromSheet(identifier, password);
+                return;
+            }
+
+            if (!matchedLocal) {
+                errEl.textContent = 'Email/Username atau Password tidak valid. Hubungi Admin jika belum memiliki akun.';
+                errEl.classList.remove('hidden');
+                return;
+            }
+
+            errEl.classList.add('hidden');
+            completeLoginSuccess(matchedLocal);
+        }
+
+        function handleLogout() {
+            activeAccount = null;
+            try {
+                localStorage.removeItem(SESSION_KEY);
+            } catch (e) {}
+            document.getElementById('app-shell').classList.add('hidden');
+            document.getElementById('auth-screen').classList.remove('hidden');
+            updateLoginDbStatusPreview();
+        }
+
+        function enterAppWorkspace() {
+            try {
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('app-shell').classList.remove('hidden');
+
+                loadProfile();
+                loadData();
+                updateDatabaseConnectionUI();
+
+                const greetingEl = document.getElementById('dash-admin-greeting');
+                if (greetingEl) greetingEl.textContent = storeProfile.adminName || storeProfile.name || 'Admin';
+
+                const emailBadge = document.getElementById('prof-account-email-badge');
+                if (emailBadge && activeAccount) emailBadge.textContent = `Akun: ${activeAccount.email}`;
+
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+                updateAllViews();
+
+                if (isDatabaseConnected()) {
+                    syncFromGoogleSheets(false);
+                }
+            } catch (err) {
+                console.error('Error saat memuat dashboard:', err);
+                showToast('Terjadi kendala saat memuat tampilan: ' + err.message);
+            }
+        }
+
+        // ==================== DATA LOAD, SAVE & GOOGLE SHEETS SYNC ====================
+        function loadData() {
+            try {
+                const raw = localStorage.getItem(getStorageKey());
+                serviceList = raw ? JSON.parse(raw) : [];
+                if (!Array.isArray(serviceList)) serviceList = [];
+            } catch (e) {
+                serviceList = [];
+            }
+        }
+
+        function saveData(shouldSync = false) {
+            try {
+                localStorage.setItem(getStorageKey(), JSON.stringify(serviceList));
+            } catch (e) {}
+            updateAllViews();
+            if (shouldSync && isDatabaseConnected()) {
+                pushDataToGoogleSheets();
+            }
+        }
+
+        function pushDataToGoogleSheets() {
+            if (!activeAccount || !isDatabaseConnected()) return;
+            const payload = {
+                action: 'syncAll',
+                accountId: activeAccount.id,
+                services: serviceList
+            };
+
+            if (isGasEnvironment()) {
+                google.script.run
+                    .withSuccessHandler(() => showToast('Tersinkron ke Google Sheets!'))
+                    .withFailureHandler((err) => console.warn('Gagal sync GAS:', err))
+                    .saveAllDataPayload(payload);
+            } else if (activeAccount.dbLink) {
+                fetch(activeAccount.dbLink, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(payload)
+                }).catch(err => console.warn('Gagal kirim ke Web App:', err));
+            }
+        }
+
+        function syncFromGoogleSheets(manualNotify = true) {
+            if (!activeAccount || !isDatabaseConnected()) {
+                if (manualNotify) showToast('Database belum tersambung atau belum di-ACC Admin.');
+                return;
+            }
+
+            if (isGasEnvironment()) {
+                google.script.run
+                    .withSuccessHandler((res) => {
+                        if (res && res.status === 'success' && Array.isArray(res.services)) {
+                            if (res.services.length > 0 || serviceList.length === 0) {
+                                serviceList = res.services;
+                                localStorage.setItem(getStorageKey(), JSON.stringify(serviceList));
+                                updateAllViews();
+                            }
+                            if (manualNotify) showToast('Data berhasil disinkronkan dari Google Sheets!');
+                        }
+                    })
+                    .withFailureHandler(() => {
+                        if (manualNotify) showToast('Gagal menarik data dari Google Sheets.');
+                    })
+                    .getAccountDataPayload(activeAccount.id);
+            } else if (activeAccount.dbLink) {
+                const sep = activeAccount.dbLink.includes('?') ? '&' : '?';
+                const fetchUrl = `${activeAccount.dbLink}${sep}action=getAll&accountId=${encodeURIComponent(activeAccount.id)}`;
+                fetch(fetchUrl)
+                    .then(r => r.json())
+                    .then(res => {
+                        if (res && res.status === 'success' && Array.isArray(res.services)) {
+                            if (res.services.length > 0 || serviceList.length === 0) {
+                                serviceList = res.services;
+                                localStorage.setItem(getStorageKey(), JSON.stringify(serviceList));
+                                updateAllViews();
+                            }
+                            if (manualNotify) showToast('Data berhasil disinkronkan dari Google Sheets!');
+                        }
+                    })
+                    .catch(() => {
+                        if (manualNotify) showToast('Sinkronisasi selesai (mode offline/CORS).');
+                    });
+            }
+        }
+
+        function resetDummyData() {
+            const today = new Date().toISOString().split('T')[0];
+            const year = new Date().getFullYear();
+            serviceList = [
+                {
+                    id: String(Date.now() + 1),
+                    nota: `SRV-${year}-001`,
+                    date: today,
+                    customer: 'Budi Santoso',
+                    phone: '081234567801',
+                    device: 'iPhone 13 Pro',
+                    imei: '358901234567890',
+                    accessories: ['Unit HP', 'Casing / Softcase'],
+                    issue: 'Ganti Baterai Original Health 100%',
+                    technician: 'Andi Pratama',
+                    status: 'Selesai',
+                    partsCost: 450000,
+                    totalPrice: 750000
+                },
+                {
+                    id: String(Date.now() + 2),
+                    nota: `SRV-${year}-002`,
+                    date: today,
+                    customer: 'Siti Rahmawati',
+                    phone: '085712345678',
+                    device: 'Samsung Galaxy A54',
+                    imei: '354123987654321',
+                    accessories: ['Unit HP', 'SIM Card'],
+                    issue: 'Ganti LCD OLED + Pasang Anti Gores',
+                    technician: 'Rizky Hidayat',
+                    status: 'Dikerjakan',
+                    partsCost: 650000,
+                    totalPrice: 950000
+                },
+                {
+                    id: String(Date.now() + 3),
+                    nota: `SRV-${year}-003`,
+                    date: today,
+                    customer: 'Deni Kurniawan',
+                    phone: '087899887766',
+                    device: 'Redmi Note 12',
+                    imei: '',
+                    accessories: ['Unit HP'],
+                    issue: 'Perbaikan Konektor Charger / IC Cas',
+                    technician: 'Budi Santoso',
+                    status: 'Diambil',
+                    partsCost: 45000,
+                    totalPrice: 175000
+                }
+            ];
+            saveData(true);
+            showToast('3 data contoh service berhasil ditambahkan!');
+        }
+
+        function saveStoreProfile(e) {
+            e.preventDefault();
+            storeProfile = {
+                ...storeProfile,
+                name: document.getElementById('prof-name').value.trim() || 'CellCare Center',
+                tagline: document.getElementById('prof-tagline').value.trim(),
+                phone: document.getElementById('prof-phone').value.trim(),
+                adminName: document.getElementById('prof-admin').value.trim() || 'Admin Service',
+                address: document.getElementById('prof-address').value.trim(),
+                terms: document.getElementById('prof-terms').value.trim()
+            };
+
+            try {
+                localStorage.setItem(getProfileKey(), JSON.stringify(storeProfile));
+                if (activeAccount) {
+                    activeAccount.profile = { ...activeAccount.profile, ...storeProfile };
+                    const list = getAllAccounts();
+                    const idx = list.findIndex(a => a.id === activeAccount.id);
+                    if (idx !== -1) {
+                        list[idx] = activeAccount;
+                        saveAllAccountsCache(list);
+                    }
+                    if (isGasEnvironment()) {
+                        google.script.run.registerOrUpdateAccount(activeAccount);
+                    }
+                }
+            } catch (err) {}
+
+            applyProfileToUI();
+            updateProfilePreviewCard();
+            showToast('Profil toko berhasil disimpan!');
+        }
+
+        function updateProfilePreviewCard() {
+            const nameEl = document.getElementById('preview-card-name');
+            if (!nameEl) return;
+            nameEl.textContent = document.getElementById('prof-name')?.value || storeProfile.name || 'CellCare Pro';
+            document.getElementById('preview-card-tagline').textContent = document.getElementById('prof-tagline')?.value || storeProfile.tagline || '';
+            document.getElementById('preview-card-address').textContent = document.getElementById('prof-address')?.value || storeProfile.address || '';
+            const phoneVal = document.getElementById('prof-phone')?.value || storeProfile.phone || '';
+            document.getElementById('preview-card-phone').textContent = phoneVal ? `WA: ${phoneVal}` : '';
+            document.getElementById('preview-card-terms').textContent = document.getElementById('prof-terms')?.value || storeProfile.terms || '';
+        }
+
+        // ==================== INITIALIZATION & EVENT BINDING ====================
+        function bindAllEvents() {
+            document.getElementById('login-form')?.addEventListener('submit', handleLoginSubmit);
+            document.getElementById('login-email')?.addEventListener('input', updateLoginDbStatusPreview);
+            document.getElementById('btn-header-logout')?.addEventListener('click', handleLogout);
+            document.getElementById('btn-profile-logout')?.addEventListener('click', handleLogout);
+            document.getElementById('btn-recheck-db')?.addEventListener('click', () => {
+                if (!activeAccount) return;
+                if (isGasEnvironment()) {
+                    google.script.run
+                        .withSuccessHandler((res) => {
+                            if (res && res.status === 'success' && res.account) {
+                                activeAccount = res.account;
+                                loadProfile();
+                                updateDatabaseConnectionUI();
+                                if (isDatabaseConnected()) {
+                                    showToast('Database Connected! Menyinkronkan data...');
+                                    syncFromGoogleSheets(true);
+                                } else {
+                                    showToast('Database masih belum tersambung. Link belum di-ACC Admin.');
+                                }
+                            }
+                        })
+                        .loginAccountFromSheet(activeAccount.email, activeAccount.password);
+                    return;
+                }
+                const latest = getAllAccounts().find(a => a.id === activeAccount.id || a.email === activeAccount.email);
+                if (latest) activeAccount = latest;
+                loadProfile();
+                updateDatabaseConnectionUI();
+                if (isDatabaseConnected()) {
+                    showToast('Database Connected! Menyinkronkan data...');
+                    syncFromGoogleSheets(true);
+                } else {
+                    showToast('Database masih belum tersambung. Link belum dimasukkan/di-ACC Admin.');
+                }
+            });
+
+            document.querySelectorAll('.bottom-nav-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const targetTab = this.getAttribute('data-tab');
+                    if (targetTab) switchTab(targetTab);
+                });
+            });
+
+            document.getElementById('btn-header-add')?.addEventListener('click', openServiceModal);
+            document.getElementById('btn-services-add')?.addEventListener('click', openServiceModal);
+            document.getElementById('btn-theme-toggle')?.addEventListener('click', toggleTheme);
+            document.getElementById('btn-reset-dummy')?.addEventListener('click', resetDummyData);
+            document.getElementById('btn-dash-see-all')?.addEventListener('click', () => switchTab('services'));
+
+            document.getElementById('search-input')?.addEventListener('input', renderServicesTable);
+            document.getElementById('filter-status')?.addEventListener('change', renderServicesTable);
+            document.getElementById('filter-tech')?.addEventListener('change', renderServicesTable);
+
+            document.getElementById('report-month-filter')?.addEventListener('change', renderReports);
+            document.getElementById('btn-clear-month')?.addEventListener('click', clearMonthFilter);
+            document.getElementById('btn-export-csv')?.addEventListener('click', exportToCSV);
+
+            document.getElementById('profile-form')?.addEventListener('submit', saveStoreProfile);
+            document.getElementById('btn-sync-now')?.addEventListener('click', () => syncFromGoogleSheets(true));
+            ['prof-name', 'prof-tagline', 'prof-address', 'prof-phone', 'prof-terms'].forEach(id => {
+                document.getElementById(id)?.addEventListener('input', updateProfilePreviewCard);
+            });
+
+            document.getElementById('service-form')?.addEventListener('submit', handleFormSubmit);
+            document.getElementById('btn-close-service-modal-x')?.addEventListener('click', closeServiceModal);
+            document.getElementById('btn-cancel-service-modal')?.addEventListener('click', closeServiceModal);
+            document.getElementById('srv-parts-cost')?.addEventListener('input', calculateLiveProfit);
+            document.getElementById('srv-total-price')?.addEventListener('input', calculateLiveProfit);
+
+            document.getElementById('btn-close-receipt-x')?.addEventListener('click', closeReceiptModal);
+            document.getElementById('btn-close-receipt')?.addEventListener('click', closeReceiptModal);
+            document.getElementById('btn-print-receipt')?.addEventListener('click', () => window.print());
+
+            document.getElementById('services-tbody')?.addEventListener('click', function(e) {
+                const actionBtn = e.target.closest('button[data-action]');
+                if (!actionBtn) return;
+                const action = actionBtn.getAttribute('data-action');
+                const id = actionBtn.getAttribute('data-id');
+                if (action === 'receipt') openReceiptModal(id);
+                else if (action === 'edit') editService(id);
+                else if (action === 'delete') deleteService(id);
+            });
+        }
+
+        function initApp() {
+            bootstrapFromUrlParams();
+            bindAllEvents();
+            initTheme();
+            updateLoginDbStatusPreview();
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+
+            try {
+                const savedSessionId = localStorage.getItem(SESSION_KEY);
+                if (savedSessionId) {
+                    const found = getAllAccounts().find(a => a.id === savedSessionId);
+                    if (found) {
+                        activeAccount = found;
+                        enterAppWorkspace();
+                        return;
+                    }
+                }
+            } catch (e) {}
+        }
+
+        // ==================== PROFILE & GOOGLE SHEETS SYNC ====================
+        function loadProfile() {
+            const saved = localStorage.getItem(getProfileKey());
+            if (saved) {
+                try {
+                    storeProfile = { ...storeProfile, ...JSON.parse(saved) };
+                } catch (e) {}
+            } else if (activeAccount && activeAccount.profile) {
+                storeProfile = { ...storeProfile, ...activeAccount.profile };
+            }
+            if (activeAccount) {
+                storeProfile.gasUrl = activeAccount.dbApproved ? (activeAccount.dbLink || '') : '';
+            }
+            applyProfileToUI();
+            updateProfilePreviewCard();
+        }
+
+        function applyProfileToUI() {
+            const headerName = document.getElementById('header-store-name');
+            const headerTagline = document.getElementById('header-store-tagline');
+            if (headerName) headerName.textContent = storeProfile.name || 'CellCare Center';
+            if (headerTagline) headerTagline.textContent = storeProfile.tagline || 'Manajemen & Laporan Service HP';
+
+            const fName = document.getElementById('prof-name');
+            if (fName) {
+                document.getElementById('prof-name').value = storeProfile.name || '';
+                document.getElementById('prof-tagline').value = storeProfile.tagline || '';
+                document.getElementById('prof-phone').value = storeProfile.phone || '';
+                document.getElementById('prof-admin').value = storeProfile.adminName || '';
+                document.getElementById('prof-address').value = storeProfile.address || '';
+                document.getElementById('prof-terms').value = storeProfile.terms || '';
+                document.getElementById('prof-gas-url').value = isDatabaseConnected()
+                    ? (activeAccount.dbLink || 'Terhubung via Google Apps Script')
+                    : 'Belum tersambung (Diatur oleh Admin)';
+                document.getElementById('prof-gas-url').readOnly = true;
+            }
+
+            const syncBtn = document.getElementById('btn-sync-now');
+            if (syncBtn) {
+                if (isDatabaseConnected()) syncBtn.classList.remove('hidden');
+                else syncBtn.classList.add('hidden');
+            }
+            updateDatabaseConnectionUI();
+        }
+
+        // ==================== THEME TOGGLE ====================
+        function initTheme() {
+            let savedTheme = 'light';
+            try {
+                savedTheme = localStorage.getItem('cellcare_theme') || 'light';
+            } catch (e) {}
+            const isDark = savedTheme === 'dark';
+            document.documentElement.classList.toggle('dark', isDark);
+            updateThemeIcon(isDark);
+        }
+
+        function toggleTheme() {
+            const isDark = document.documentElement.classList.toggle('dark');
+            try {
+                localStorage.setItem('cellcare_theme', isDark ? 'dark' : 'light');
+            } catch (e) {}
+            updateThemeIcon(isDark);
+            if (activeAccount) updateAllViews();
+        }
+
+        function updateThemeIcon(isDark) {
+            const icon = document.getElementById('theme-icon');
+            if (icon) {
+                icon.setAttribute('data-lucide', isDark ? 'sun' : 'moon');
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            }
+        }
+
+        // ==================== NAVIGATION TABS ====================
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            const targetSection = document.getElementById(`tab-${tabName}`);
+            if (targetSection) {
+                targetSection.classList.remove('hidden');
+            }
+
+            document.querySelectorAll('.bottom-nav-btn').forEach(btn => {
+                btn.classList.remove('text-blue-600', 'dark:text-blue-400', 'bg-blue-50', 'dark:bg-blue-900/30', 'font-semibold', 'shadow-sm');
+                btn.classList.add('text-slate-500', 'dark:text-slate-400', 'font-medium');
+            });
+            const activeBtn = document.getElementById(`b-nav-${tabName}`);
+            if (activeBtn) {
+                activeBtn.classList.add('text-blue-600', 'dark:text-blue-400', 'bg-blue-50', 'dark:bg-blue-900/30', 'font-semibold', 'shadow-sm');
+                activeBtn.classList.remove('text-slate-500', 'dark:text-slate-400', 'font-medium');
+            }
+
+            if (tabName === 'reports') renderReports();
+            if (tabName === 'dashboard') renderDashboard();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // ==================== FORMATTERS & HELPERS ====================
+        function formatRupiah(num) {
+            return 'Rp ' + (Number(num) || 0).toLocaleString('id-ID');
+        }
+
+        function formatDateIndo(dateStr) {
+            if (!dateStr) return '-';
+            const options = { day: '2-digit', month: 'short', year: 'numeric' };
+            return new Date(dateStr).toLocaleDateString('id-ID', options);
+        }
+
+        function getStatusBadge(status) {
+            const styles = {
+                'Antrian': 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
+                'Pengecekan': 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
+                'Dikerjakan': 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+                'Menunggu Sparepart': 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+                'Selesai': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
+                'Diambil': 'bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-300',
+                'Dibatalkan': 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300'
+            };
+            const cls = styles[status] || styles['Antrian'];
+            return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${cls}">${status}</span>`;
+        }
+
+        function generateNotaNumber() {
+            const year = new Date().getFullYear();
+            const nextNum = String(serviceList.length + 1).padStart(3, '0');
+            return `SRV-${year}-${nextNum}`;
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-message').textContent = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        // ==================== RENDER ALL VIEWS ====================
+        function updateAllViews() {
+            renderDashboard();
+            renderServicesTable();
+            renderReports();
+        }
+
+        // ==================== RENDER DASHBOARD ====================
+        function renderDashboard() {
+            const totalUnits = serviceList.length;
+            const inProgress = serviceList.filter(s => ['Antrian', 'Pengecekan', 'Dikerjakan', 'Menunggu Sparepart'].includes(s.status)).length;
+            const ready = serviceList.filter(s => s.status === 'Selesai').length;
+
+            const validTransactions = serviceList.filter(s => s.status !== 'Dibatalkan');
+            const grossRevenue = validTransactions.reduce((acc, s) => acc + Number(s.totalPrice), 0);
+            const totalParts = validTransactions.reduce((acc, s) => acc + Number(s.partsCost), 0);
+            const netProfit = grossRevenue - totalParts;
+
+            document.getElementById('kpi-total-units').textContent = totalUnits;
+            document.getElementById('kpi-in-progress').textContent = inProgress;
+            document.getElementById('kpi-ready').textContent = ready;
+            document.getElementById('kpi-net-profit').textContent = formatRupiah(netProfit);
+            document.getElementById('kpi-gross-revenue').textContent = `Omzet: ${formatRupiah(grossRevenue)}`;
+
+            const recentTbody = document.getElementById('recent-services-tbody');
+            const recentItems = [...serviceList].reverse().slice(0, 5);
+            if (recentItems.length === 0) {
+                recentTbody.innerHTML = `<tr><td colspan="4" class="py-8 text-center text-slate-400 text-xs">Belum ada data transaksi service pada toko ini. Klik "+ Service Baru" untuk mulai mencatat.</td></tr>`;
+            } else {
+                recentTbody.innerHTML = recentItems.map(item => `
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
+                        <td class="py-3 px-4">
+                            <div class="font-mono text-xs font-semibold text-blue-600 dark:text-blue-400">${item.nota}</div>
+                            <div class="font-medium text-slate-800 dark:text-slate-200">${item.customer}</div>
+                        </td>
+                        <td class="py-3 px-4">
+                            <div class="font-medium text-slate-800 dark:text-slate-200">${item.device}</div>
+                            <div class="text-xs text-slate-500 truncate max-w-[200px]">${item.issue}</div>
+                        </td>
+                        <td class="py-3 px-4">${getStatusBadge(item.status)}</td>
+                        <td class="py-3 px-4 text-right font-semibold text-slate-800 dark:text-slate-200">${formatRupiah(item.totalPrice)}</td>
+                    </tr>
+                `).join('');
+            }
+
+            renderStatusChart();
+        }
+
+        function renderStatusChart() {
+            const canvas = document.getElementById('statusDoughnutChart');
+            if (!canvas || typeof Chart === 'undefined') return;
+            const ctx = canvas.getContext('2d');
+            const statusGroups = {
+                'Proses / Antrian': serviceList.filter(s => ['Antrian', 'Pengecekan', 'Dikerjakan', 'Menunggu Sparepart'].includes(s.status)).length,
+                'Selesai (Siap Ambil)': serviceList.filter(s => s.status === 'Selesai').length,
+                'Sudah Diambil': serviceList.filter(s => s.status === 'Diambil').length,
+                'Dibatalkan': serviceList.filter(s => s.status === 'Dibatalkan').length
+            };
+
+            const labels = Object.keys(statusGroups);
+            const dataValues = Object.values(statusGroups);
+            const colors = ['#3b82f6', '#10b981', '#14b8a6', '#f43f5e'];
+
+            if (statusChartInstance) statusChartInstance.destroy();
+
+            statusChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: dataValues,
+                        backgroundColor: colors,
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '68%',
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+
+            document.getElementById('status-legend-summary').innerHTML = labels.map((label, idx) => `
+                <div class="flex items-center justify-between bg-slate-50 dark:bg-slate-800/60 px-2.5 py-1.5 rounded-lg">
+                    <span class="flex items-center gap-1.5 text-slate-600 dark:text-slate-300 truncate">
+                        <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:${colors[idx]}"></span>
+                        <span class="truncate">${label}</span>
+                    </span>
+                    <span class="font-bold text-slate-800 dark:text-white ml-1">${dataValues[idx]}</span>
+                </div>
+            `).join('');
+        }
+
+        // ==================== RENDER SERVICES TABLE ====================
+        function renderServicesTable() {
+            const query = document.getElementById('search-input').value.toLowerCase();
+            const statusFilter = document.getElementById('filter-status').value;
+            const techFilter = document.getElementById('filter-tech').value;
+
+            const filtered = [...serviceList].reverse().filter(item => {
+                const matchQuery =
+                    item.nota.toLowerCase().includes(query) ||
+                    item.customer.toLowerCase().includes(query) ||
+                    item.device.toLowerCase().includes(query) ||
+                    item.issue.toLowerCase().includes(query);
+                const matchStatus = statusFilter === 'ALL' || item.status === statusFilter;
+                const matchTech = techFilter === 'ALL' || item.technician === techFilter;
+                return matchQuery && matchStatus && matchTech;
+            });
+
+            const tbody = document.getElementById('services-tbody');
+            const emptyState = document.getElementById('empty-state');
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            tbody.innerHTML = filtered.map(item => {
+                const profit = Number(item.totalPrice) - Number(item.partsCost);
+                const waText = encodeURIComponent(
+                    `Halo Kak ${item.customer}, kami dari *${storeProfile.name}* menginformasikan status service perangkat *${item.device}* (No. Nota: *${item.nota}*) saat ini: *${item.status.toUpperCase()}*. Total biaya: *${formatRupiah(item.totalPrice)}*. Terima kasih!`
+                );
+                const cleanPhone = String(item.phone || '').replace(/[^0-9]/g, '').replace(/^0/, '62');
+
+                return `
+                <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
+                    <td class="py-3.5 px-4 whitespace-nowrap">
+                        <div class="font-mono text-xs font-bold text-blue-600 dark:text-blue-400">${item.nota}</div>
+                        <div class="text-xs text-slate-400">${formatDateIndo(item.date)}</div>
+                    </td>
+                    <td class="py-3.5 px-4">
+                        <div class="font-semibold text-slate-800 dark:text-slate-200">${item.customer}</div>
+                        <a href="https://wa.me/${cleanPhone}?text=${waText}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 hover:underline mt-0.5" title="Kirim Update via WhatsApp">
+                            <i data-lucide="message-circle" class="w-3 h-3"></i> ${item.phone}
+                        </a>
+                    </td>
+                    <td class="py-3.5 px-4">
+                        <div class="font-medium text-slate-800 dark:text-slate-200">${item.device}</div>
+                        <div class="text-xs text-slate-500 max-w-xs truncate" title="${item.issue}">${item.issue}</div>
+                    </td>
+                    <td class="py-3.5 px-4 whitespace-nowrap text-xs font-medium text-slate-600 dark:text-slate-300">
+                        ${item.technician}
+                    </td>
+                    <td class="py-3.5 px-4 whitespace-nowrap">
+                        ${getStatusBadge(item.status)}
+                    </td>
+                    <td class="py-3.5 px-4 whitespace-nowrap text-right">
+                        <div class="font-bold text-slate-800 dark:text-slate-200">${formatRupiah(item.totalPrice)}</div>
+                        <div class="text-[11px] text-emerald-600 dark:text-emerald-400">Laba: ${formatRupiah(profit)}</div>
+                    </td>
+                    <td class="py-3.5 px-4 whitespace-nowrap text-center">
+                        <div class="flex items-center justify-center gap-1">
+                            <button type="button" data-action="receipt" data-id="${item.id}" class="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition cursor-pointer" title="Cetak Nota">
+                                <i data-lucide="printer" class="w-4 h-4"></i>
+                            </button>
+                            <button type="button" data-action="edit" data-id="${item.id}" class="p-1.5 rounded-lg text-slate-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/30 transition cursor-pointer" title="Edit Data">
+                                <i data-lucide="edit-3" class="w-4 h-4"></i>
+                            </button>
+                            <button type="button" data-action="delete" data-id="${item.id}" class="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30 transition cursor-pointer" title="Hapus Data">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                `;
+            }).join('');
+
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        }
+
+        // ==================== MODAL CRUD OPERATIONS ====================
+        function openServiceModal() {
+            document.getElementById('service-form').reset();
+            document.getElementById('srv-id').value = '';
+            document.getElementById('modal-title').textContent = 'Input Data Service Baru';
+            document.getElementById('srv-nota').value = generateNotaNumber();
+            document.getElementById('srv-date').value = new Date().toISOString().split('T')[0];
+            document.querySelectorAll('.acc-checkbox').forEach(cb => cb.checked = cb.value === 'Unit HP');
+            calculateLiveProfit();
+            document.getElementById('service-modal').classList.remove('hidden');
+        }
+
+        function closeServiceModal() {
+            document.getElementById('service-modal').classList.add('hidden');
+        }
+
+        function calculateLiveProfit() {
+            const parts = Number(document.getElementById('srv-parts-cost').value) || 0;
+            const total = Number(document.getElementById('srv-total-price').value) || 0;
+            const profit = total - parts;
+            const el = document.getElementById('live-profit-preview');
+            el.textContent = formatRupiah(profit);
+            el.className = profit >= 0
+                ? 'font-bold text-sm text-emerald-600 dark:text-emerald-400'
+                : 'font-bold text-sm text-rose-600 dark:text-rose-400';
+        }
+
+        function handleFormSubmit(e) {
+            e.preventDefault();
+            const id = document.getElementById('srv-id').value;
+            const accessories = Array.from(document.querySelectorAll('.acc-checkbox:checked')).map(cb => cb.value);
+
+            const payload = {
+                id: id || String(Date.now()),
+                nota: document.getElementById('srv-nota').value,
+                date: document.getElementById('srv-date').value,
+                customer: document.getElementById('srv-customer').value.trim(),
+                phone: document.getElementById('srv-phone').value.trim(),
+                device: document.getElementById('srv-device').value.trim(),
+                imei: document.getElementById('srv-imei').value.trim(),
+                accessories: accessories,
+                issue: document.getElementById('srv-issue').value.trim(),
+                technician: document.getElementById('srv-tech').value,
+                status: document.getElementById('srv-status').value,
+                partsCost: Number(document.getElementById('srv-parts-cost').value) || 0,
+                totalPrice: Number(document.getElementById('srv-total-price').value) || 0
+            };
+
+            if (id) {
+                const idx = serviceList.findIndex(item => item.id === id);
+                if (idx !== -1) serviceList[idx] = payload;
+                showToast('Data service berhasil diperbarui!');
+            } else {
+                serviceList.push(payload);
+                showToast('Unit service baru berhasil ditambahkan!');
+            }
+
+            saveData(true);
+            closeServiceModal();
+        }
+
+        function editService(id) {
+            const item = serviceList.find(s => s.id === id);
+            if (!item) return;
+
+            document.getElementById('srv-id').value = item.id;
+            document.getElementById('modal-title').textContent = `Edit Data Service (${item.nota})`;
+            document.getElementById('srv-nota').value = item.nota;
+            document.getElementById('srv-date').value = item.date;
+            document.getElementById('srv-customer').value = item.customer;
+            document.getElementById('srv-phone').value = item.phone;
+            document.getElementById('srv-device').value = item.device;
+            document.getElementById('srv-imei').value = item.imei || '';
+            document.getElementById('srv-issue').value = item.issue;
+            document.getElementById('srv-tech').value = item.technician;
+            document.getElementById('srv-status').value = item.status;
+            document.getElementById('srv-parts-cost').value = item.partsCost;
+            document.getElementById('srv-total-price').value = item.totalPrice;
+
+            document.querySelectorAll('.acc-checkbox').forEach(cb => {
+                cb.checked = (item.accessories || []).includes(cb.value);
+            });
+
+            calculateLiveProfit();
+            document.getElementById('service-modal').classList.remove('hidden');
+        }
+
+        function deleteService(id) {
+            serviceList = serviceList.filter(s => s.id !== id);
+            saveData(true);
+            showToast('Data service telah dihapus.');
+        }
+
+        // ==================== RECEIPT / NOTA MODAL ====================
+        function openReceiptModal(id) {
+            const item = serviceList.find(s => s.id === id);
+            if (!item) return;
+
+            document.getElementById('rcp-store-name').textContent = storeProfile.name || 'CellCare Pro';
+            document.getElementById('rcp-store-tagline').textContent = storeProfile.tagline || '';
+            document.getElementById('rcp-store-address').textContent = storeProfile.address || '';
+            document.getElementById('rcp-store-phone').textContent = storeProfile.phone ? `WA: ${storeProfile.phone}` : '';
+            document.getElementById('rcp-sign-admin').textContent = `( ${storeProfile.adminName || 'Admin Service'} )`;
+            document.getElementById('rcp-terms').textContent = storeProfile.terms || '';
+
+            document.getElementById('rcp-nota').textContent = item.nota;
+            document.getElementById('rcp-date').textContent = formatDateIndo(item.date);
+            document.getElementById('rcp-customer').textContent = item.customer;
+            document.getElementById('rcp-phone').textContent = item.phone;
+            document.getElementById('rcp-device').textContent = item.device;
+            document.getElementById('rcp-imei').textContent = item.imei || '-';
+            document.getElementById('rcp-acc').textContent = (item.accessories && item.accessories.length) ? item.accessories.join(', ') : 'Unit HP';
+            document.getElementById('rcp-issue').textContent = item.issue;
+            document.getElementById('rcp-status').textContent = item.status;
+            document.getElementById('rcp-total').textContent = formatRupiah(item.totalPrice);
+            document.getElementById('rcp-sign-cust').textContent = `( ${item.customer} )`;
+
+            document.getElementById('receipt-modal').classList.remove('hidden');
+        }
+
+        function closeReceiptModal() {
+            document.getElementById('receipt-modal').classList.add('hidden');
+        }
+
+        // ==================== REPORTS & ANALYTICS ====================
+        function clearMonthFilter() {
+            document.getElementById('report-month-filter').value = '';
+            renderReports();
+        }
+
+        function renderReports() {
+            const monthFilter = document.getElementById('report-month-filter').value;
+            const filtered = serviceList.filter(item => {
+                if (item.status === 'Dibatalkan') return false;
+                if (!monthFilter) return true;
+                return String(item.date || '').startsWith(monthFilter);
+            });
+
+            const totalRev = filtered.reduce((sum, i) => sum + Number(i.totalPrice), 0);
+            const totalParts = filtered.reduce((sum, i) => sum + Number(i.partsCost), 0);
+            const netProfit = totalRev - totalParts;
+            const margin = totalRev > 0 ? Math.round((netProfit / totalRev) * 100) : 0;
+
+            document.getElementById('rep-total-revenue').textContent = formatRupiah(totalRev);
+            document.getElementById('rep-total-count').textContent = `Dari ${filtered.length} transaksi aktif`;
+            document.getElementById('rep-total-parts').textContent = formatRupiah(totalParts);
+            document.getElementById('rep-net-profit').textContent = formatRupiah(netProfit);
+            document.getElementById('rep-profit-margin').textContent = `Margin keuntungan: ${margin}%`;
+
+            const techMap = {};
+            filtered.forEach(item => {
+                if (!techMap[item.technician]) {
+                    techMap[item.technician] = { count: 0, revenue: 0, profit: 0 };
+                }
+                techMap[item.technician].count += 1;
+                techMap[item.technician].revenue += Number(item.totalPrice);
+                techMap[item.technician].profit += (Number(item.totalPrice) - Number(item.partsCost));
+            });
+
+            const techContainer = document.getElementById('technician-stats-list');
+            const techEntries = Object.entries(techMap);
+            if (techEntries.length === 0) {
+                techContainer.innerHTML = `<p class="text-xs text-slate-400 text-center py-6">Belum ada data pada periode ini.</p>`;
+            } else {
+                techContainer.innerHTML = techEntries.map(([name, stat]) => `
+                    <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200/70 dark:border-slate-700/70">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-semibold text-sm text-slate-800 dark:text-slate-200">${name}</span>
+                            <span class="text-xs font-bold px-2 py-0.5 rounded-md bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">${stat.count} Unit</span>
+                        </div>
+                        <div class="flex justify-between text-xs text-slate-500 dark:text-slate-400">
+                            <span>Omzet: ${formatRupiah(stat.revenue)}</span>
+                            <span class="text-emerald-600 dark:text-emerald-400 font-medium">Laba: ${formatRupiah(stat.profit)}</span>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            renderFinancialChart(filtered);
+        }
+
+        function renderFinancialChart(dataItems) {
+            const canvas = document.getElementById('financialBarChart');
+            if (!canvas || typeof Chart === 'undefined') return;
+            const ctx = canvas.getContext('2d');
+            const labels = dataItems.map(i => i.nota);
+            const revenues = dataItems.map(i => Number(i.totalPrice));
+            const parts = dataItems.map(i => Number(i.partsCost));
+            const profits = dataItems.map(i => Number(i.totalPrice) - Number(i.partsCost));
+
+            if (financialChartInstance) financialChartInstance.destroy();
+
+            const isDark = document.documentElement.classList.contains('dark');
+            const gridColor = isDark ? 'rgba(148, 163, 184, 0.1)' : 'rgba(148, 163, 184, 0.2)';
+            const textColor = isDark ? '#94a3b8' : '#64748b';
+
+            financialChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'Omzet', data: revenues, backgroundColor: '#3b82f6', borderRadius: 6 },
+                        { label: 'Modal Sparepart', data: parts, backgroundColor: '#f43f5e', borderRadius: 6 },
+                        { label: 'Laba Bersih', data: profits, backgroundColor: '#10b981', borderRadius: 6 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: textColor, font: { size: 11 } } },
+                        y: { grid: { color: gridColor }, ticks: { color: textColor, font: { size: 11 } } }
+                    },
+                    plugins: {
+                        legend: { labels: { color: textColor, font: { size: 12 } } }
+                    }
+                }
+            });
+        }
+
+        // ==================== EXPORT CSV (EXCEL COMPATIBLE) ====================
+        function exportToCSV() {
+            if (serviceList.length === 0) {
+                showToast('Tidak ada data untuk diekspor!');
+                return;
+            }
+
+            const headers = [
+                'No Nota', 'Tanggal Masuk', 'Nama Pelanggan', 'No Telepon',
+                'Perangkat', 'IMEI', 'Kelengkapan', 'Keluhan / Tindakan',
+                'Teknisi', 'Modal Sparepart', 'Total Biaya', 'Laba Bersih', 'Status'
+            ];
+
+            const rows = serviceList.map(item => {
+                const profit = Number(item.totalPrice) - Number(item.partsCost);
+                return [
+                    item.nota,
+                    item.date,
+                    `"${String(item.customer || '').replace(/"/g, '""')}"`,
+                    `"${item.phone}"`,
+                    `"${String(item.device || '').replace(/"/g, '""')}"`,
+                    `"${item.imei || '-'}"`,
+                    `"${(item.accessories || []).join(', ')}"`,
+                    `"${String(item.issue || '').replace(/"/g, '""')}"`,
+                    `"${item.technician}"`,
+                    item.partsCost,
+                    item.totalPrice,
+                    profit,
+                    item.status
+                ].join(',');
+            });
+
+            const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            const safeStoreName = (storeProfile.name || 'CellCare').replace(/[^a-zA-Z0-9]/g, '_');
+            const today = new Date().toISOString().split('T')[0];
+
+            link.setAttribute('href', url);
+            link.setAttribute('download', `Laporan_Service_${safeStoreName}_${today}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            showToast('File laporan Excel (CSV) berhasil diunduh!');
+        }
+
+        // Jalankan aplikasi segera setelah DOM siap (aman di GitHub Pages maupun sandbox Apps Script)
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initApp);
+        } else {
+            initApp();
+        }
+    </script>
+</body>
+</html>
